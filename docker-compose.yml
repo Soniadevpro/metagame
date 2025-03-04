@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   frontend:
     build: 
@@ -5,11 +7,7 @@ services:
     container_name: metagame-frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
+    command: sh -c "npm run dev -- --host 0.0.0.0"
     depends_on:
       - backend
 
@@ -19,24 +17,31 @@ services:
     container_name: metagame-backend
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      - DJANGO_SETTINGS_MODULE=config.settings
+      - DJANGO_SECRET_KEY=super-secret-key
+    command: sh -c "/wait && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
   db:
     image: postgres:15
     container_name: metagame-db
     ports:
       - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: metagame
       POSTGRES_USER: metagame_user
       POSTGRES_PASSWORD: metagame_password
+      PGDATA: /var/lib/postgresql/data/pgdata  # Évite la réinitialisation des données
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metagame_user -d metagame"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - pg_data:/var/lib/postgresql/data
 
 volumes:
-  postgres-data:
+  pg_data:
+

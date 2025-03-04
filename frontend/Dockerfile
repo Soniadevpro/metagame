@@ -1,9 +1,8 @@
 FROM node:18
 
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier package.json et package-lock.json
+# Copier uniquement les fichiers package.json et package-lock.json pour optimiser la mise en cache
 COPY package*.json ./
 
 # Installer les dépendances
@@ -12,11 +11,12 @@ RUN npm install
 # Copier le reste du projet
 COPY . .
 
-# Construire l'application
-RUN npm run build
+# Fixer les permissions
+RUN chmod -R 755 /app
 
 # Exposer le port
 EXPOSE 3000
 
-# Commande par défaut
-CMD ["npm", "start"]
+# Démarrer l'application
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
